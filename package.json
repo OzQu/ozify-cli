@@ -1,0 +1,15 @@
+{
+  "name": "ozify-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Oskari Ruutiainen",
+  "license": "MIT",
+  "dependencies": {
+    "node-notifier": "^5.2.1",
+    "spotify-web-api-node": "^4.0.0"
+  }
+}
