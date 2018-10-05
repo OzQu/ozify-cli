@@ -8,6 +8,8 @@ const clientSecret = process.argv[3];
 const code = process.argv[4];
 const refreshCode = process.argv[5];
 const playlist = process.argv[6];
+const playlistSplitted = playlist.split(":");
+const playlistId = playlistSplitted[playlistSplitted.length - 1];
 
 const notifier = require('node-notifier');
 const SpotifyWebApi = require('spotify-web-api-node');
@@ -21,41 +23,32 @@ let spotifyApi = new SpotifyWebApi(credentials);
 spotifyApi.setAccessToken(code);
 spotifyApi.setRefreshToken(refreshCode);
 
-
 (async () => {
-    await spotifyApi.refreshAccessToken()
-        .then(data => {
-            spotifyApi.setAccessToken(data.body['access_token']);
-        })
-        .catch(err => {
-            console.log("Couldn't refresh: ", err);
-        });
+    try {
+        const refreshTokenData = await spotifyApi.refreshAccessToken();
+        spotifyApi.setAccessToken(refreshTokenData.body['access_token']);
+    } catch (err) {
+        console.log("Couldn't refresh: ", err);
+    }
 
-    let playlistSplitted = playlist.split(":");
-    let playlistId = playlistSplitted[playlistSplitted.length - 1];
-
-    await spotifyApi.getMyCurrentPlayingTrack()
-        .then(data => {
-            if (data.body.item) {
-                let tracks = [data.body.item.uri];
-                let removeTracks = tracks.map(track => {
-                    return {"uri": track};
-                });
-                return spotifyApi.removeTracksFromPlaylist(playlistId, removeTracks);
-            } else {
-                throw "No tracks playing";
-            }
-        })
-        .then(response => {
-            notifier.notify({
-                title: "Spotify-cli - Removed track from Starred",
-                message: "Removed track with statusCode: " + response.statusCode,
-                sound: true
-            });
-        })
-        .catch(err => {
-            console.log("Just couldn't: ", err);
+    try {
+        const data = await spotifyApi.getMyCurrentPlayingTrack();
+        if (!data.body.item) {
+            throw "No tracks playing";
+        }
+        const tracks = [data.body.item.uri];
+        const removeTracks = tracks.map(track => {
+            return {"uri": track};
         });
+        const removeResponse = await spotifyApi.removeTracksFromPlaylist(playlistId, removeTracks);
+        notifier.notify({
+            title: "Spotify-cli - Removed track from Starred",
+            message: "Removed track with statusCode: " + removeResponse.statusCode,
+            sound: true
+        });
+    } catch(err) {
+        console.log("Just couldn't: ", err);
+    }
 
 })();
 

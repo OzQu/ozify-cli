@@ -8,6 +8,8 @@ const clientSecret = process.argv[3];
 const code = process.argv[4];
 const refreshCode = process.argv[5];
 const playlist = process.argv[6];
+const playlistSplitted = playlist.split(":");
+const playlistId = playlistSplitted[playlistSplitted.length - 1];
 
 const notifier = require('node-notifier');
 const SpotifyWebApi = require('spotify-web-api-node');
@@ -22,36 +24,28 @@ spotifyApi.setAccessToken(code);
 spotifyApi.setRefreshToken(refreshCode);
 
 (async () => {
-    await spotifyApi.refreshAccessToken()
-        .then(data => {
-            spotifyApi.setAccessToken(data.body['access_token']);
-        })
-        .catch(err => {
-            console.log("Couldn't refresh: ", err);
-        });
+    try {
+        const data = await spotifyApi.refreshAccessToken();
+        spotifyApi.setAccessToken(data.body['access_token']);
+    } catch (err) {
+        console.log("Couldn't refresh: ", err);
+    }
 
-    let playlistSplitted = playlist.split(":");
-    let playlistId = playlistSplitted[playlistSplitted.length - 1];
-
-    await spotifyApi.getMyCurrentPlayingTrack()
-        .then(data => {
-            if (data.body.item) {
-                let tracks = [data.body.item.uri];
-                return spotifyApi.addTracksToPlaylist(playlistId, tracks);
-            } else {
-                throw "No tracks playing";
-            }
-        })
-        .then(data => {
-            notifier.notify({
-                title: "Spotify-cli - Added track to Starred",
-                message: "Added track with statusCode: " + data.statusCode,
-                sound: true
-            });
-        })
-        .catch(err => {
-            console.log("Just couldn't: ", err);
+    try {
+        const data = await spotifyApi.getMyCurrentPlayingTrack();
+        if (!data.body.item) {
+            throw "No tracks playing";
+        }
+        const tracks = [data.body.item.uri];
+        const addResponse = await spotifyApi.addTracksToPlaylist(playlistId, tracks);
+        notifier.notify({
+            title: "Spotify-cli - Added track to Starred",
+            message: "Added track with statusCode: " + addResponse.statusCode,
+            sound: true
         });
+    } catch (err) {
+        console.log("Just couldn't: ", err);
+    }
 
 })();
 
