@@ -36,10 +36,15 @@ spotifyApi.setRefreshToken(refreshCode);
         if (!data.body.item) {
             throw "No tracks playing";
         }
+        // I'd like to destruct data.body.item to both of following (name and artists).
+        // I just don't know how to map and join array while descturcting
+        const name = data.body.item.name
+        const artists = data.body.item.artists.map(artist => artist.name).join(", ")
+
         const tracks = [data.body.item.uri];
         const addResponse = await spotifyApi.addTracksToPlaylist(playlistId, tracks);
         notifier.notify({
-            title: "Spotify-cli - Added track to Starred",
+            title: `Added ${artists} - ${name} to Starred`,
             message: "Added track with statusCode: " + addResponse.statusCode,
             sound: true
         });
