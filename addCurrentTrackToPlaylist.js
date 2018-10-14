@@ -26,6 +26,10 @@ spotifyApi.setRefreshToken(refreshCode);
 
 (async () => {
     try {
+        notifier.notify({
+            title: "Ozify-cli",
+            message: "Adding currently playing song to the Playlist",
+        })
         const data = await spotifyApi.refreshAccessToken();
         spotifyApi.setAccessToken(data.body['access_token']);
     } catch (err) {

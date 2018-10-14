@@ -25,6 +25,10 @@ spotifyApi.setRefreshToken(refreshCode);
 
 (async () => {
     try {
+        notifier.notify({
+            title: "Ozify-cli",
+            message: "Removing currently playing song from the Playlist",
+        })
         const refreshTokenData = await spotifyApi.refreshAccessToken();
         spotifyApi.setAccessToken(refreshTokenData.body['access_token']);
     } catch (err) {
