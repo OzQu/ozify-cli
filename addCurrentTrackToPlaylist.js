@@ -11,6 +11,7 @@ const playlist = process.argv[6];
 const playlistSplitted = playlist.split(":");
 const playlistId = playlistSplitted[playlistSplitted.length - 1];
 
+const util = require('./util');
 const notifier = require('node-notifier');
 const SpotifyWebApi = require('spotify-web-api-node');
 const credentials = {
@@ -36,18 +37,31 @@ spotifyApi.setRefreshToken(refreshCode);
         if (!data.body.item) {
             throw "No tracks playing";
         }
+        const trackUri = data.body.item.uri;
+
         // I'd like to destruct data.body.item to both of following (name and artists).
         // I just don't know how to map and join array while descturcting
         const name = data.body.item.name
         const artists = data.body.item.artists.map(artist => artist.name).join(", ")
 
-        const tracks = [data.body.item.uri];
-        const addResponse = await spotifyApi.addTracksToPlaylist(playlistId, tracks);
-        notifier.notify({
-            title: `Added ${artists} - ${name} to Starred`,
-            message: "Added track with statusCode: " + addResponse.statusCode,
-            sound: true
-        });
+        // Check if already on list
+        const trackAlreadyOnPlaylist = await util.playlistContainsTrack(spotifyApi, trackUri, playlistId)
+        if (trackAlreadyOnPlaylist) {
+            notifier.notify({
+                title: `${artists} - ${name}`,
+                message: "Track already on the Playlist",
+                sound: true
+            })
+        } else {
+
+            const tracks = [data.body.item.uri];
+            const addResponse = await spotifyApi.addTracksToPlaylist(playlistId, tracks);
+            notifier.notify({
+                title: `${artists} - ${name}`,
+                message: "Added track to the Playlist with statusCode: " + addResponse.statusCode,
+                sound: true
+            });
+        }
     } catch (err) {
         console.log("Just couldn't: ", err);
     }
